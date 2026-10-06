@@ -1,0 +1,13 @@
+[package]
+name = "python"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "hitman_sat"
+crate-type = ["cdylib"]
+
+[dependencies]
+hitman-sat = { path = "../core" }
+pyo3 = "0.29.3"

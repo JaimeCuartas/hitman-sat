@@ -1,0 +1,13 @@
+[package]
+name = "hitman-sat"
+version = "0.1.1"
+edition = "2024"
+description = "SAT-based hitting set solver"
+license = "MIT"
+repository = "https://github.com/JaimeCuartas/hitman-sat"
+readme = "../../README.md"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]

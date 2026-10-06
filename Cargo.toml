@@ -1,15 +1,6 @@
-[package]
-name = "hitman-sat"
-version = "0.1.0"
-edition = "2024"
-description = "SAT-based hitting set solver"
-repository = "https://github.com/JaimeCuartas/hitman-sat"
-readme = "README.md"
-license = "MIT OR Apache-2.0"
-
-[lib]
-name = "hitman_sat"
-crate-type = ["cdylib"]
-
-[dependencies]
-pyo3 = "0.29.3"
+[workspace]
+members = [
+    "crates/core",
+    "crates/python",
+]
+resolver = "2"
