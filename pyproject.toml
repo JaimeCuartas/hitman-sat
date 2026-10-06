@@ -1,6 +1,6 @@
 [build-system]
 require = ["maturin>=1.0, <2.0"]
-bluid-backend = "maturin"
+build-backend = "maturin"
 
 [project]
 name = "hitman-sat"
