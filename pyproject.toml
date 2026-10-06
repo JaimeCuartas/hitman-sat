@@ -1,5 +1,5 @@
 [build-system]
-require = ["maturin>=1.0, <2.0"]
+requires = ["maturin>=1.0, <2.0"]
 build-backend = "maturin"
 
 [project]
@@ -8,3 +8,4 @@ version = "0.0.1a1"
 description = "SAT-based hitting set solver"
 readme = "README.md"
 requires-python = ">=3.8"
+
