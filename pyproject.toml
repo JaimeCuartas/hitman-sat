@@ -1,0 +1,10 @@
+[build-system]
+require = ["maturin>=1.0, <2.0"]
+bluid-backend = "maturin"
+
+[project]
+name = "hitman-sat"
+version = "0.0.1a1"
+description = "SAT-based hitting set solver"
+readme = "README.md"
+requires-python = ">=3.8"
