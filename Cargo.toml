@@ -5,5 +5,6 @@ edition = "2024"
 description = "SAT-based hitting set solver"
 repository = "https://github.com/JaimeCuartas/hitman-sat"
 readme = "README.md"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
