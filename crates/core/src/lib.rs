@@ -1,14 +1,23 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+///
+use rustsat::lit;
+use rustsat::solvers::{Solve, SolverResult};
+use rustsat::types::Clause;
+use rustsat_cadical::CaDiCaL;
+
+/// x0 \/ x1 nd not x0
+pub fn small_sat() -> bool {
+    let mut s = CaDiCaL::default();
+    let mut c1 = Clause::new();
+    c1.add(lit![0]);
+    c1.add(lit![1]);
+    s.solve().unwrap() == SolverResult::Sat
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    fn cadical_works() {
+        let result = super::small_sat();
+        assert!(result);
     }
 }

@@ -11,3 +11,5 @@ readme = "../../README.md"
 crate-type = ["rlib"]
 
 [dependencies]
+rustsat = "0.7.5"
+rustsat-cadical = "0.7.5"
