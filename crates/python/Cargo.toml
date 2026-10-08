@@ -9,5 +9,5 @@ name = "hitman_sat"
 crate-type = ["cdylib"]
 
 [dependencies]
-hitman-sat = { path = "../core" }
+hitman = { package = "hitman-sat", path = "../core" }
 pyo3 = "0.29.3"
