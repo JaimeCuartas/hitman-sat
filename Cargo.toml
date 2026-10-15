@@ -14,3 +14,13 @@ edition = "2024"
 
 [workspace.dependencies]
 hitman = { package = "hitman-sat", path = "crates/core" }
+
+[profile.release]
+#speed over size
+opt-level = 3
+#No compilation of unused code but slower to compile
+lto = true
+# Optimization over speed of compilation
+codegen-units = 1
+#Size of compilation over readability on errors
+strip = true
