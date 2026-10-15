@@ -22,6 +22,7 @@ impl Default for Hitman {
 }
 
 impl Hitman {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             sets: Vec::new(),
@@ -35,7 +36,7 @@ impl Hitman {
     pub fn hit(&mut self, clause: &[u32]) {
         let mut clause_ids: Vec<u32> = Vec::with_capacity(clause.len());
 
-        for element in clause.iter() {
+        for element in clause {
             let id = self.get_id(*element);
             clause_ids.push(id);
         }
@@ -81,6 +82,7 @@ impl Hitman {
         }
     }
 
+    #[must_use]
     pub fn sets(&self) -> &[Vec<u32>] {
         &self.sets
     }
