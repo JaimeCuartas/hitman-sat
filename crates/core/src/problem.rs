@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::collections::hash_map::Entry;
 
 pub struct Hitman {
@@ -22,13 +23,40 @@ impl Hitman {
         }
     }
 
+    // TODO when hitting an empty set the collection 
+    // has no more hitting sets. I need to cover this
     pub fn hit(&mut self, clause: &[u32]) {
         let mut clause_ids: Vec<u32> = Vec::with_capacity(clause.len());
 
-        for &element in clause.iter() {
-            let id = self.get_id(element);
+        for element in clause.iter() {
+            let id = self.get_id(*element);
             clause_ids.push(id);
         }
+        self.sets.push(clause_ids);
+    }
+
+    pub fn hit_fitering(&mut self, clause: &[u32]) {
+        let clause_ids: Vec<u32> = if clause.len() > 100 {
+            let mut seen = HashSet::with_capacity(clause.len());
+            let mut ids = Vec::with_capacity(clause.len());
+
+            for &element in clause {
+                if seen.insert(element){
+                    ids.push(self.get_id(element));
+                }
+            }
+            ids
+        } else {
+            let mut ids: Vec<u32> = Vec::with_capacity(clause.len());
+
+            for (i, element) in clause.iter().enumerate(){
+                if !clause[..i].contains(element){
+                    let id = self.get_id(*element);
+                    ids.push(id);
+                }
+            }
+            ids
+        };
         self.sets.push(clause_ids);
     }
 
@@ -95,5 +123,22 @@ mod tests {
         hitman.hit(&[28, 11]);
         hitman.hit(&[29, 28, 30, 10]);
         assert_eq!(hitman.id2var, &[28, 10, 11, 29, 30]);
+    }
+    #[test]
+    fn get_sets() {
+        let mut hitman = Hitman::new();
+        hitman.hit(&[5,3,10]);
+        let first = hitman.sets()[0].clone();
+        hitman.hit(&[2,3,4]);
+        assert_eq!(first, &[1,2,3]);
+    }
+    #[test]
+    fn hit_and_hit_w_filter() {
+        let mut hitman = Hitman::new();
+        hitman.hit(&[2,2,3]);
+        assert_eq!(hitman.sets, vec![vec![1, 1, 2]]);
+        let mut hitman = Hitman::new();
+        hitman.hit_fitering(&[2,2,3]);
+        assert_eq!(hitman.sets, vec![vec![1, 2]]);
     }
 }
