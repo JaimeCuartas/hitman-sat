@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
 pub struct Hitman {
-    cnf: Vec<Vec<u32>>,
+    sets: Vec<Vec<u32>>,
     var2id: HashMap<u32, u32>,
     id2var: Vec<u32>,
 }
@@ -16,7 +16,7 @@ impl Default for Hitman {
 impl Hitman {
     pub fn new() -> Self {
         Self {
-            cnf: Vec::new(),
+            sets: Vec::new(),
             var2id: HashMap::new(),
             id2var: Vec::new(),
         }
@@ -26,35 +26,26 @@ impl Hitman {
         let mut clause_ids: Vec<u32> = Vec::with_capacity(clause.len());
 
         for &element in clause.iter() {
-            if element == 0 {
-                continue;
-            }
             let id = self.get_id(element);
             clause_ids.push(id);
         }
-        if clause_ids.is_empty() {
-            return;
-        }
-        self.cnf.push(clause_ids);
+        self.sets.push(clause_ids);
     }
 
     fn get_id(&mut self, var_name: u32) -> u32 {
         let id_entry = self.var2id.entry(var_name);
         match id_entry {
             Entry::Occupied(occupied) => *occupied.get(),
-            Entry::Vacant(_) => {
+            Entry::Vacant(vacant) => {
                 let new_id =
-                    u32::try_from(self.len() + 1).expect("Variable count exceeded u32::MAX limit");
+                    u32::try_from(self.id2var.len() + 1).expect("Variable count exceeded u32::MAX limit");
                 self.id2var.push(var_name);
-                self.var2id.insert(var_name, new_id);
+                vacant.insert( new_id);
                 new_id
             }
         }
     }
 
-    fn len(&self) -> usize {
-        self.id2var.len()
-    }
 }
 
 #[cfg(test)]
@@ -63,7 +54,7 @@ mod tests {
     #[test]
     fn new_is_emtpy() {
         let hitman = Hitman::new();
-        assert_eq!(hitman.len(), 0);
+        assert_eq!(hitman.id2var.len(), 0);
     }
     #[test]
     fn hit_assigns_ids() {
@@ -76,21 +67,22 @@ mod tests {
         assert_eq!(hitman.var2id.get(&11u32), Some(&3u32));
         assert_eq!(hitman.var2id.get(&29u32), Some(&4u32));
         assert_eq!(hitman.var2id.get(&30u32), Some(&5u32));
-        assert_eq!(hitman.len(), 5);
+        assert_eq!(hitman.id2var.len(), 5);
     }
     #[test]
-    fn hit_assigns_creates_cnf() {
+    fn hit_assigns_creates_sets() {
         let mut hitman = Hitman::new();
         hitman.hit(&[28, 10]);
         hitman.hit(&[28, 11]);
         hitman.hit(&[29, 28, 30, 10]);
-        assert_eq!(hitman.cnf, vec![vec![1, 2], vec![1, 3], vec![4, 1, 5, 2]])
+        assert_eq!(hitman.sets, vec![vec![1, 2], vec![1, 3], vec![4, 1, 5, 2]])
     }
     #[test]
     fn empty_clause() {
         let mut hitman = Hitman::new();
-        hitman.hit(&[0]);
-        assert_eq!(hitman.len(), 0);
+        hitman.hit(&[]);
+        assert_eq!(hitman.id2var.len(), 0);
+        assert_eq!(hitman.sets.len(), 1);
     }
     #[test]
     fn id_round_trip() {
