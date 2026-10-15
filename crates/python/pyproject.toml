@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "hitman-sat"
-version = "0.1.1"
+dynamic = ["version"]
 description = "SAT-based hitting set solver"
 readme = "../../README.md"
 requires-python = ">=3.8"

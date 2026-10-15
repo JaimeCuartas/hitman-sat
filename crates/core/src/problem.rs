@@ -2,6 +2,13 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::hash_map::Entry;
 
+// threshold for hitting sets for the
+// functinon hit used when we need to
+// filter duplication, different strategies
+// with this constant
+// TODO: test DEDUP_THRESHOLD
+const DEDUP_THRESHOLD: usize = 100;
+
 pub struct Hitman {
     sets: Vec<Vec<u32>>,
     var2id: HashMap<u32, u32>,
@@ -35,8 +42,8 @@ impl Hitman {
         self.sets.push(clause_ids);
     }
 
-    pub fn hit_fitering(&mut self, clause: &[u32]) {
-        let clause_ids: Vec<u32> = if clause.len() > 100 {
+    pub fn hit_filtering(&mut self, clause: &[u32]) {
+        let clause_ids: Vec<u32> = if clause.len() > DEDUP_THRESHOLD {
             let mut seen = HashSet::with_capacity(clause.len());
             let mut ids = Vec::with_capacity(clause.len());
 
@@ -74,7 +81,7 @@ impl Hitman {
         }
     }
 
-    pub fn sets(&self) -> &Vec<Vec<u32>> {
+    pub fn sets(&self) -> &[Vec<u32>] {
         &self.sets
     }
 
@@ -83,6 +90,7 @@ impl Hitman {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn new_is_empty() {
         let hitman = Hitman::new();
@@ -125,7 +133,7 @@ mod tests {
         assert_eq!(hitman.id2var, &[28, 10, 11, 29, 30]);
     }
     #[test]
-    fn get_sets() {
+    fn test_get_sets() {
         let mut hitman = Hitman::new();
         hitman.hit(&[5,3,10]);
         let first = hitman.sets()[0].clone();
@@ -138,7 +146,7 @@ mod tests {
         hitman.hit(&[2,2,3]);
         assert_eq!(hitman.sets, vec![vec![1, 1, 2]]);
         let mut hitman = Hitman::new();
-        hitman.hit_fitering(&[2,2,3]);
+        hitman.hit_filtering(&[2,2,3]);
         assert_eq!(hitman.sets, vec![vec![1, 2]]);
     }
 }

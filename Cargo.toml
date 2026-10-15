@@ -5,3 +5,12 @@ members = [
     "crates/wasm",
 ]
 resolver = "2"
+
+[workspace.package]
+license = "MIT"
+repository = "https://github.com/JaimeCuartas/hitman-sat"
+version = "0.1.2"
+edition = "2024"
+
+[workspace.dependencies]
+hitman = { package = "hitman-sat", path = "crates/core" }

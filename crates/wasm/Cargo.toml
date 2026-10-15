@@ -1,15 +1,16 @@
 [package]
 name = "hitman-sat-wasm"
-version = "0.1.0"
-edition = "2024"
 description = "WebAssembly bindings for the hitting set"
 readme = "README.md"
 publish = false
+license = { workspace = true }
+version = { workspace = true }
+edition = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-hitman = { package = "hitman-sat", path = "../core" }
+hitman = { workspace = true }
 wasm-bindgen = "0.2.129"
 serde-wasm-bindgen = "0.6.5"

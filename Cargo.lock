@@ -206,7 +206,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hitman-sat"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "rustsat",
  "rustsat-cadical",
@@ -214,7 +214,7 @@ dependencies = [
 
 [[package]]
 name = "hitman-sat-python"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "hitman-sat",
  "pyo3",
@@ -222,7 +222,7 @@ dependencies = [
 
 [[package]]
 name = "hitman-sat-wasm"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "hitman-sat",
  "serde-wasm-bindgen",
