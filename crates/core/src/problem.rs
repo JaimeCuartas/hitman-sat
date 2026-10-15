@@ -46,13 +46,17 @@ impl Hitman {
         }
     }
 
+    pub fn sets(&self) -> &Vec<Vec<u32>> {
+        &self.sets
+    }
+
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn new_is_emtpy() {
+    fn new_is_empty() {
         let hitman = Hitman::new();
         assert_eq!(hitman.id2var.len(), 0);
     }
