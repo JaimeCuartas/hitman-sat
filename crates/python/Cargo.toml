@@ -12,3 +12,6 @@ crate-type = ["cdylib"]
 [dependencies]
 hitman = { workspace = true }
 pyo3 = "0.29.3"
+
+[lints]
+workspace = true
