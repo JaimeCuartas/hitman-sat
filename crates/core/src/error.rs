@@ -1,14 +1,14 @@
 use std::fmt;
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum HitmanError {
-    OutOfRange { value: usize, max: u32 },
+    OutOfRange { value: usize },
 }
 
 impl fmt::Display for HitmanError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            HitmanError::OutOfRange { value, max } => {
-                write!(f, "{value} is above the max {max}")
+            HitmanError::OutOfRange { value } => {
+                write!(f, "The number of ids is {value}, which is above the max {}", u32::MAX)
             }
         }
     }
@@ -25,11 +25,14 @@ mod tests {
         let max_usize = usize::MAX;
         let err_out_of_range = HitmanError::OutOfRange {
             value: max_usize,
-            max: max_u32,
         };
         assert_eq!(
+            err_out_of_range,
+            HitmanError::OutOfRange { value: max_usize }
+        );
+        assert_eq!(
             err_out_of_range.to_string(),
-            format!("{max_usize} is above the max {max_u32}")
+            format!("The number of ids is {max_usize}, which is above the max {max_u32}")
         );
     }
 }

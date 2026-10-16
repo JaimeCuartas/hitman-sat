@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::hash_map::Entry;
 
+use crate::HitmanError;
+
 // threshold for hitting sets for the
 // functinon hit used when we need to
 // filter duplication, different strategies
@@ -31,53 +33,68 @@ impl Hitman {
         }
     }
 
-    // TODO when hitting an empty set the collection 
+    // TODO when hitting an empty set the collection
     // has no more hitting sets. I need to cover this
-    pub fn hit(&mut self, clause: &[u32]) {
+    /// Add the set `claues` as a new set to hit
+    /// # Errors
+    /// Returns [`HitmanError`] if the number of
+    /// lits is greater than u32 type
+    pub fn hit(&mut self, clause: &[u32]) -> Result<(), HitmanError> {
         let mut clause_ids: Vec<u32> = Vec::with_capacity(clause.len());
 
         for element in clause {
-            let id = self.get_id(*element);
+            let id = self.get_id(*element)?;
             clause_ids.push(id);
         }
         self.sets.push(clause_ids);
+        Ok(())
     }
 
-    pub fn hit_filtering(&mut self, clause: &[u32]) {
+    /// Add the set `claues` as a new set to hit
+    /// if it has duplicates, it filters them
+    /// # Errors
+    /// Returns [`HitmanError`] if the number of
+    /// lits is greater than u32 type
+    pub fn hit_filtering(&mut self, clause: &[u32]) -> Result<(), HitmanError> {
         let clause_ids: Vec<u32> = if clause.len() > DEDUP_THRESHOLD {
             let mut seen = HashSet::with_capacity(clause.len());
             let mut ids = Vec::with_capacity(clause.len());
 
             for &element in clause {
-                if seen.insert(element){
-                    ids.push(self.get_id(element));
+                if seen.insert(element) {
+                    let id = self.get_id(element)?;
+                    ids.push(id);
                 }
             }
             ids
         } else {
             let mut ids: Vec<u32> = Vec::with_capacity(clause.len());
 
-            for (i, element) in clause.iter().enumerate(){
-                if !clause[..i].contains(element){
-                    let id = self.get_id(*element);
+            for (i, element) in clause.iter().enumerate() {
+                if !clause[..i].contains(element) {
+                    let id = self.get_id(*element)?;
                     ids.push(id);
                 }
             }
             ids
         };
         self.sets.push(clause_ids);
+        Ok(())
     }
 
-    fn get_id(&mut self, var_name: u32) -> u32 {
+    fn get_id(&mut self, var_name: u32) -> Result<u32, HitmanError> {
         let id_entry = self.var2id.entry(var_name);
         match id_entry {
-            Entry::Occupied(occupied) => *occupied.get(),
+            Entry::Occupied(occupied) => Ok(*occupied.get()),
             Entry::Vacant(vacant) => {
+                let size_ids = self.id2var.len() + 1;
                 let new_id =
-                    u32::try_from(self.id2var.len() + 1).expect("Variable count exceeded u32::MAX limit");
+                    u32::try_from(size_ids).map_err(|_| HitmanError::OutOfRange {
+                        value: self.id2var.len() + 1,
+                    })?;
                 self.id2var.push(var_name);
-                vacant.insert( new_id);
-                new_id
+                vacant.insert(new_id);
+                Ok(new_id)
             }
         }
     }
@@ -86,7 +103,6 @@ impl Hitman {
     pub fn sets(&self) -> &[Vec<u32>] {
         &self.sets
     }
-
 }
 
 #[cfg(test)]
@@ -101,9 +117,9 @@ mod tests {
     #[test]
     fn hit_assigns_ids() {
         let mut hitman = Hitman::new();
-        hitman.hit(&[28, 10]);
-        hitman.hit(&[28, 11]);
-        hitman.hit(&[29, 28, 30, 10]);
+        hitman.hit(&[28, 10]).unwrap();
+        hitman.hit(&[28, 11]).unwrap();
+        hitman.hit(&[29, 28, 30, 10]).unwrap();
         assert_eq!(hitman.var2id.get(&28u32), Some(&1u32));
         assert_eq!(hitman.var2id.get(&10u32), Some(&2u32));
         assert_eq!(hitman.var2id.get(&11u32), Some(&3u32));
@@ -114,41 +130,41 @@ mod tests {
     #[test]
     fn hit_assigns_creates_sets() {
         let mut hitman = Hitman::new();
-        hitman.hit(&[28, 10]);
-        hitman.hit(&[28, 11]);
-        hitman.hit(&[29, 28, 30, 10]);
-        assert_eq!(hitman.sets, vec![vec![1, 2], vec![1, 3], vec![4, 1, 5, 2]])
+        hitman.hit(&[28, 10]).unwrap();
+        hitman.hit(&[28, 11]).unwrap();
+        hitman.hit(&[29, 28, 30, 10]).unwrap();
+        assert_eq!(hitman.sets, vec![vec![1, 2], vec![1, 3], vec![4, 1, 5, 2]]);
     }
     #[test]
     fn empty_clause() {
         let mut hitman = Hitman::new();
-        hitman.hit(&[]);
+        hitman.hit(&[]).unwrap();
         assert_eq!(hitman.id2var.len(), 0);
         assert_eq!(hitman.sets.len(), 1);
     }
     #[test]
     fn id_round_trip() {
         let mut hitman = Hitman::new();
-        hitman.hit(&[28, 10]);
-        hitman.hit(&[28, 11]);
-        hitman.hit(&[29, 28, 30, 10]);
+        hitman.hit(&[28, 10]).unwrap();
+        hitman.hit(&[28, 11]).unwrap();
+        hitman.hit(&[29, 28, 30, 10]).unwrap();
         assert_eq!(hitman.id2var, &[28, 10, 11, 29, 30]);
     }
     #[test]
     fn test_get_sets() {
         let mut hitman = Hitman::new();
-        hitman.hit(&[5,3,10]);
+        hitman.hit(&[5, 3, 10]).unwrap();
         let first = hitman.sets()[0].clone();
-        hitman.hit(&[2,3,4]);
-        assert_eq!(first, &[1,2,3]);
+        hitman.hit(&[2, 3, 4]).unwrap();
+        assert_eq!(first, &[1, 2, 3]);
     }
     #[test]
     fn hit_and_hit_w_filter() {
         let mut hitman = Hitman::new();
-        hitman.hit(&[2,2,3]);
+        hitman.hit(&[2, 2, 3]).unwrap();
         assert_eq!(hitman.sets, vec![vec![1, 1, 2]]);
         let mut hitman = Hitman::new();
-        hitman.hit_filtering(&[2,2,3]);
+        hitman.hit_filtering(&[2, 2, 3]).unwrap();
         assert_eq!(hitman.sets, vec![vec![1, 2]]);
     }
 }
