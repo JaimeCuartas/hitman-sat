@@ -5,7 +5,7 @@ use std::collections::hash_map::Entry;
 use crate::HitmanError;
 
 // threshold for hitting sets for the
-// functinon hit used when we need to
+// function hit used when we need to
 // filter duplication, different strategies
 // with this constant
 // TODO: test DEDUP_THRESHOLD
@@ -35,10 +35,10 @@ impl Hitman {
 
     // TODO when hitting an empty set the collection
     // has no more hitting sets. I need to cover this
-    /// Add the set `claues` as a new set to hit
+    /// Add the set `clause` as a new set to hit
     /// # Errors
-    /// Returns [`HitmanError`] if the number of
-    /// lits is greater than u32 type
+    /// Returns [`HitmanError`]
+    /// if more than ``u32::MAX`` distinct elements are added
     pub fn hit(&mut self, clause: &[u32]) -> Result<(), HitmanError> {
         let mut clause_ids: Vec<u32> = Vec::with_capacity(clause.len());
 
@@ -90,7 +90,7 @@ impl Hitman {
                 let size_ids = self.id2var.len() + 1;
                 let new_id =
                     u32::try_from(size_ids).map_err(|_| HitmanError::OutOfRange {
-                        value: self.id2var.len() + 1,
+                        value: size_ids
                     })?;
                 self.id2var.push(var_name);
                 vacant.insert(new_id);
