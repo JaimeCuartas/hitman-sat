@@ -35,6 +35,8 @@ impl Hitman {
 
     // TODO when hitting an empty set the collection
     // has no more hitting sets. I need to cover this
+    // TODO if I have an error halfway, the set is not
+    // included but the ids before the error keep their ids
     /// Add the set `clause` as a new set to hit
     /// # Errors
     /// Returns [`HitmanError`]
