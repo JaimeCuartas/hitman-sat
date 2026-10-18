@@ -89,7 +89,7 @@ impl Hitman {
             Entry::Vacant(vacant) => {
                 let size_ids = self.id2var.len() + 1;
                 let new_id =
-                    u32::try_from(size_ids).map_err(|_| HitmanError::OutOfRange {
+                    u32::try_from(size_ids).map_err(|_| HitmanError::TooManyElements {
                         value: size_ids
                     })?;
                 self.id2var.push(var_name);
