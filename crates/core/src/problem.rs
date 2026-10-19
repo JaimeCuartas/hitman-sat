@@ -108,55 +108,58 @@ impl Hitman {
         &self.sets
     }
 
-    fn is_minimal_hitting_set(
-        &self,
-        candidate_hs: &[u32],
-        target_sets: &[Vec<u32>],
-        blocked_sets: &[Vec<u32>],
-    ) -> bool {
-        let candidate_set: HashSet<u32> = candidate_hs.iter().copied().collect();
+}
 
-        for blocked in blocked_sets {
-            if self.is_subset(blocked, &candidate_set) {
-                return false;
-            }
+fn is_minimal_hitting_set(
+    candidate_hs: &[u32],
+    target_sets: &[Vec<u32>],
+    blocked_sets: &[Vec<u32>],
+) -> bool {
+    let candidate_set: HashSet<u32> = candidate_hs.iter().copied().collect();
+
+    for blocked in blocked_sets {
+        if is_subset(blocked, &candidate_set) {
+            return false;
         }
+    }
 
-        let mut required_elements = HashSet::new();
+    let mut required_elements = HashSet::new();
 
-        for target in target_sets {
-            let mut overlap = 0;
-            let mut needed = 0;
+    for target in target_sets {
 
-            for elem in target {
-                if candidate_set.contains(elem) {
-                    overlap += 1;
-                    needed = *elem;
+        let mut only: Option<u32> = None;
+        let mut hit_twice = false;
 
-                    if overlap > 1 {
-                        break;
-                    }
+        for elem in target {
+            if !candidate_set.contains(elem) {
+                continue;
+            }
+            match only {
+                None => only = Some(*elem),
+                Some(prev) if prev == *elem => {}
+                Some(_) => {
+                    hit_twice = true;
+                    break;
                 }
             }
-            if overlap == 0 {
-                return false;
-            }
-            if overlap == 1 {
-                required_elements.insert(needed);
-            }
         }
-
-        required_elements.len() == candidate_set.len()
+        match (only, hit_twice) {
+            (None, _) => return false,
+            (Some(e), false) => {required_elements.insert(e);},
+            (Some(_), true) => {},
+        }
     }
 
-    fn is_subset(&self, sub: &[u32], set: &HashSet<u32>) -> bool {
-        for elem in sub {
-            if !set.contains(elem) {
-                return false;
-            }
+    required_elements.len() == candidate_set.len()
+}
+
+fn is_subset(sub: &[u32], set: &HashSet<u32>) -> bool {
+    for elem in sub {
+        if !set.contains(elem) {
+            return false;
         }
-        true
     }
+    true
 }
 
 #[cfg(test)]
