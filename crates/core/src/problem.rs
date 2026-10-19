@@ -1,10 +1,10 @@
+use rustsat::clause;
+use rustsat::solvers::{PhaseLit, Solve, SolverResult};
+use rustsat::types::{Clause, Lit, TernaryVal, Var};
+use rustsat_batsat::BasicSolver;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::hash_map::Entry;
-use rustsat::clause;
-use rustsat::solvers::{Solve, PhaseLit, SolverResult};
-use rustsat::types::{Lit, TernaryVal, Var, Clause};
-use rustsat_batsat::BasicSolver;
 
 use crate::HitmanError;
 
@@ -94,10 +94,8 @@ impl Hitman {
             Entry::Occupied(occupied) => Ok(*occupied.get()),
             Entry::Vacant(vacant) => {
                 let size_ids = self.id2var.len() + 1;
-                let new_id =
-                    u32::try_from(size_ids).map_err(|_| HitmanError::TooManyElements {
-                        value: size_ids
-                    })?;
+                let new_id = u32::try_from(size_ids)
+                    .map_err(|_| HitmanError::TooManyElements { value: size_ids })?;
                 self.id2var.push(var_name);
                 vacant.insert(new_id);
                 Ok(new_id)
@@ -108,6 +106,56 @@ impl Hitman {
     #[must_use]
     pub fn sets(&self) -> &[Vec<u32>] {
         &self.sets
+    }
+
+    fn is_minimal_hitting_set(
+        &self,
+        candidate_hs: &[u32],
+        target_sets: &[Vec<u32>],
+        blocked_sets: &[Vec<u32>],
+    ) -> bool {
+        let candidate_set: HashSet<u32> = candidate_hs.iter().copied().collect();
+
+        for blocked in blocked_sets {
+            if self.is_subset(blocked, &candidate_set) {
+                return false;
+            }
+        }
+
+        let mut required_elements = HashSet::new();
+
+        for target in target_sets {
+            let mut overlap = 0;
+            let mut needed = 0;
+
+            for elem in target {
+                if candidate_set.contains(elem) {
+                    overlap += 1;
+                    needed += *elem;
+
+                    if overlap > 1 {
+                        break;
+                    }
+                }
+            }
+            if overlap == 0 {
+                return false;
+            }
+            if overlap == 1 {
+                required_elements.insert(needed);
+            }
+        }
+
+        required_elements.len() == candidate_set.len()
+    }
+
+    fn is_subset(&self, sub: &[u32], set: &HashSet<u32>) -> bool {
+        for elem in sub {
+            if !set.contains(elem) {
+                return false;
+            }
+        }
+        true
     }
 }
 
@@ -189,7 +237,7 @@ mod tests {
 
         let mut solver2 = BasicSolver::default();
 
-        let x = Lit::new(1, true);
+        let x = Lit::new(1, false);
         let y = Lit::new(2, false);
         solver2.add_clause(clause![!x, y]).unwrap();
 

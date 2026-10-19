@@ -11,6 +11,7 @@ repository = { workspace = true }
 crate-type = ["rlib"]
 
 [dependencies]
+batsat = "0.6.0"
 rustsat = "0.7.5"
 rustsat-batsat = "0.7.5"
 thiserror = "2.0.21"
