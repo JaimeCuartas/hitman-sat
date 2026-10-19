@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::hash_map::Entry;
+use rustsat::clause;
+use rustsat::solvers::{Solve, PhaseLit, SolverResult};
+use rustsat::types::{Lit, TernaryVal, Var, Clause};
+use rustsat_batsat::BasicSolver;
 
 use crate::HitmanError;
 
@@ -168,5 +172,31 @@ mod tests {
         let mut hitman = Hitman::new();
         hitman.hit_filtering(&[2, 2, 3]).unwrap();
         assert_eq!(hitman.sets, vec![vec![1, 2]]);
+    }
+    #[test]
+    fn testing_phase_lit() {
+        let mut solver1 = BasicSolver::default();
+
+        let x = Lit::new(1, true);
+        let y = Lit::new(2, true);
+        solver1.add_clause(clause![!x, y]).unwrap();
+
+        let res = solver1.solve().unwrap();
+        assert_eq!(res, SolverResult::Sat);
+
+        assert_eq!(solver1.lit_val(x).unwrap(), TernaryVal::True);
+        assert_eq!(solver1.lit_val(y).unwrap(), TernaryVal::True);
+
+        let mut solver2 = BasicSolver::default();
+
+        let x = Lit::new(1, true);
+        let y = Lit::new(2, false);
+        solver2.add_clause(clause![!x, y]).unwrap();
+
+        let res = solver2.solve().unwrap();
+        assert_eq!(res, SolverResult::Sat);
+
+        assert_eq!(solver2.lit_val(x).unwrap(), TernaryVal::False);
+        assert_eq!(solver2.lit_val(y).unwrap(), TernaryVal::False);
     }
 }
