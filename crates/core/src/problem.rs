@@ -131,7 +131,7 @@ impl Hitman {
             for elem in target {
                 if candidate_set.contains(elem) {
                     overlap += 1;
-                    needed += *elem;
+                    needed = *elem;
 
                     if overlap > 1 {
                         break;
