@@ -210,6 +210,7 @@ version = "0.1.2"
 dependencies = [
  "rustsat",
  "rustsat-cadical",
+ "thiserror",
 ]
 
 [[package]]

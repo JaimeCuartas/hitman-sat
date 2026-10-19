@@ -13,6 +13,7 @@ crate-type = ["rlib"]
 [dependencies]
 rustsat = "0.7.5"
 rustsat-cadical = "0.7.5"
+thiserror = "2.0.21"
 
 [lints]
 workspace = true
