@@ -7,6 +7,9 @@ pub enum HitmanError {
 
     #[error("Solver Error: {0}")]
     Solver(String),
+
+    #[error("SAT solver was interrupted")]
+    Interrupted,
 }
 
 #[cfg(test)]

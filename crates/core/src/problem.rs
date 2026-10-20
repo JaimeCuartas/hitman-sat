@@ -1,6 +1,5 @@
-use rustsat::clause;
-use rustsat::solvers::Solve;
-use rustsat::types::{Clause, Lit, Var};
+use rustsat::solvers::{Solve, SolverResult};
+use rustsat::types::{Clause, Lit, TernaryVal, Var};
 use rustsat_batsat::BasicSolver;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -56,6 +55,45 @@ impl Hitman {
     pub fn block(&mut self, set: &[u32]) -> Result<(), HitmanError> {
         self.add_clause(set.iter().map(|id| (*id, false)))?;
         Ok(())
+    }
+
+    /// Retreive a hitting set
+    /// # Errors
+    /// Returns [`HitmanError`]
+    /// if SAT solver is interrupted
+    pub fn get(&mut self) -> Result<Option<Vec<u32>>, HitmanError> {
+        if self.unsat {
+            return Ok(None);
+        }
+
+        let is_sat = self
+            .oracle
+            .solve()
+            .map_err(|e| HitmanError::Solver(e.to_string()))?;
+
+        match is_sat {
+            SolverResult::Sat => {
+                let mut hitting_set = Vec::new();
+
+                for (i, original_id) in (0u32..).zip(&self.var2id) {
+                    let var = Var::new(i);
+                    let var_value = self
+                        .oracle
+                        .var_val(var)
+                        .map_err(|e| HitmanError::Solver(e.to_string()))?;
+
+                    if var_value == TernaryVal::True {
+                        hitting_set.push(*original_id);
+                    }
+                }
+                Ok(Some(hitting_set))
+            }
+            SolverResult::Unsat => {
+                self.unsat = true;
+                Ok(None)
+            }
+            SolverResult::Interrupted => Err(HitmanError::Interrupted),
+        }
     }
 
     fn add_clause(
@@ -151,7 +189,6 @@ impl Hitman {
             }
         }
     }
-
 }
 
 fn new_minimal_solver() -> BasicSolver {
