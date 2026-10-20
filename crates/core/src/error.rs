@@ -1,7 +1,11 @@
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum HitmanError {
+
     #[error("The number of ids is {value}, which is above the max {max}", max = u32::MAX)]
     TooManyElements { value: usize },
+
+    #[error("Solver Error: {0}")]
+    Solver(String),
 }
 
 #[cfg(test)]

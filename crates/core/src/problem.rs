@@ -16,9 +16,10 @@ use crate::HitmanError;
 const DEDUP_THRESHOLD: usize = 100;
 
 pub struct Hitman {
-    sets: Vec<Vec<u32>>,
-    var2id: HashMap<u32, u32>,
-    id2var: Vec<u32>,
+    oracle: BasicSolver,
+    id2var: HashMap<u32, Var>,
+    var2id: Vec<u32>,
+    unsat: bool,
 }
 
 impl Default for Hitman {
@@ -31,9 +32,26 @@ impl Hitman {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            sets: Vec::new(),
-            var2id: HashMap::new(),
-            id2var: Vec::new(),
+            oracle: new_minimal_solver(),
+            var2id: Vec::new(),
+            id2var: HashMap::new(),
+            unsat: false,
+        }
+    }
+
+    fn get_or_create_var(&mut self, id: u32) -> Result<Var, HitmanError> {
+        let var_entry = self.id2var.entry(id);
+        match var_entry {
+            Entry::Occupied(occupied) => Ok(*occupied.get()),
+            Entry::Vacant(vacant) => {
+                let size_ids = self.var2id.len();
+                let new_id = u32::try_from(size_ids)
+                    .map_err(|_| HitmanError::TooManyElements { value: size_ids })?;
+                self.var2id.push(id);
+                let var = Var::new(new_id);
+                vacant.insert(Var::new(new_id));
+                Ok(var)
+            }
         }
     }
 
@@ -45,14 +63,35 @@ impl Hitman {
     /// # Errors
     /// Returns [`HitmanError`]
     /// if more than ``u32::MAX`` distinct elements are added
-    pub fn hit(&mut self, clause: &[u32]) -> Result<(), HitmanError> {
-        let mut clause_ids: Vec<u32> = Vec::with_capacity(clause.len());
-
-        for element in clause {
-            let id = self.get_id(*element)?;
-            clause_ids.push(id);
+    pub fn hit(&mut self, set: &[u32]) -> Result<(), HitmanError> {
+        if set.is_empty() {
+            self.unsat = true;
         }
-        self.sets.push(clause_ids);
+        self.add_clause(set.iter().map(|id| (*id, true)))?;
+        Ok(())
+    }
+
+    pub fn block(&mut self, set: &[u32]) -> Result<(), HitmanError> {
+        self.add_clause(set.iter().map(|id| (*id, false)))?;
+        Ok(())
+    }
+
+    fn add_clause(
+        &mut self,
+        lits: impl IntoIterator<Item = (u32, bool)>,
+    ) -> Result<(), HitmanError> {
+        let clause = lits
+            .into_iter()
+            .map(|(id, sign)| {
+                let var = self.get_or_create_var(id)?;
+
+                Ok(var.lit(!sign))
+            })
+            .collect::<Result<Clause, HitmanError>>()?;
+
+        self.oracle
+            .add_clause(clause)
+            .map_err(|e| HitmanError::Solver(e.to_string()))?;
         Ok(())
     }
 
@@ -61,53 +100,59 @@ impl Hitman {
     /// # Errors
     /// Returns [`HitmanError`] if the number of
     /// lits is greater than u32 type
-    pub fn hit_filtering(&mut self, clause: &[u32]) -> Result<(), HitmanError> {
-        let clause_ids: Vec<u32> = if clause.len() > DEDUP_THRESHOLD {
-            let mut seen = HashSet::with_capacity(clause.len());
-            let mut ids = Vec::with_capacity(clause.len());
-
-            for &element in clause {
-                if seen.insert(element) {
-                    let id = self.get_id(element)?;
-                    ids.push(id);
-                }
-            }
-            ids
-        } else {
-            let mut ids: Vec<u32> = Vec::with_capacity(clause.len());
-
-            for (i, element) in clause.iter().enumerate() {
-                if !clause[..i].contains(element) {
-                    let id = self.get_id(*element)?;
-                    ids.push(id);
-                }
-            }
-            ids
-        };
-        self.sets.push(clause_ids);
+    pub fn hit_filtering(&mut self, set: &[u32]) -> Result<(), HitmanError> {
+        if set.is_empty() {
+            self.unsat = true;
+        }
+        self.add_clause_filtering(set.iter().map(|id| (*id, true)))?;
         Ok(())
     }
 
-    fn get_id(&mut self, var_name: u32) -> Result<u32, HitmanError> {
-        let id_entry = self.var2id.entry(var_name);
-        match id_entry {
-            Entry::Occupied(occupied) => Ok(*occupied.get()),
-            Entry::Vacant(vacant) => {
-                let size_ids = self.id2var.len() + 1;
-                let new_id = u32::try_from(size_ids)
-                    .map_err(|_| HitmanError::TooManyElements { value: size_ids })?;
-                self.id2var.push(var_name);
-                vacant.insert(new_id);
-                Ok(new_id)
+    fn add_clause_filtering(
+        &mut self,
+        lits: impl IntoIterator<Item = (u32, bool)>,
+    ) -> Result<(), HitmanError> {
+        let lits_iter = lits.into_iter();
+
+        let (lower, _) = lits_iter.size_hint();
+        let clause = if lower > DEDUP_THRESHOLD {
+            let mut current_clause: Vec<Lit> = Vec::with_capacity(lower);
+            let mut seen = HashSet::with_capacity(lower);
+
+            for (id, sign) in lits_iter {
+                if seen.insert((id, sign)) {
+                    let var = self.get_or_create_var(id)?;
+                    current_clause.push(var.lit(sign));
+                }
             }
-        }
-    }
+            current_clause
+        } else {
+            let mut current_clause: Vec<Lit> = Vec::with_capacity(lower);
 
-    #[must_use]
-    pub fn sets(&self) -> &[Vec<u32>] {
-        &self.sets
+            for (id, sign) in lits_iter {
+                let var = self.get_or_create_var(id)?;
+                let lit = var.lit(sign);
+                if !current_clause.contains(&lit) {
+                    current_clause.push(lit);
+                }
+            }
+            current_clause
+        };
+        self.oracle
+            .add_clause(Clause::from_iter(clause))
+            .map_err(|e| HitmanError::Solver(e.to_string()))?;
+        Ok(())
     }
+}
 
+fn new_minimal_solver() -> BasicSolver {
+    let mut solver = BasicSolver::default();
+    let opts = batsat::SolverOpts {
+        phase_saving: 0,
+        ..Default::default()
+    };
+    *solver.batsat_mut() = batsat::Solver::new(opts, batsat::BasicCallbacks::default());
+    solver
 }
 
 fn is_minimal_hitting_set(
@@ -126,7 +171,6 @@ fn is_minimal_hitting_set(
     let mut required_elements = HashSet::new();
 
     for target in target_sets {
-
         let mut only: Option<u32> = None;
         let mut hit_twice = false;
 
@@ -145,8 +189,10 @@ fn is_minimal_hitting_set(
         }
         match (only, hit_twice) {
             (None, _) => return false,
-            (Some(e), false) => {required_elements.insert(e);},
-            (Some(_), true) => {},
+            (Some(e), false) => {
+                required_elements.insert(e);
+            }
+            (Some(_), true) => {}
         }
     }
 
