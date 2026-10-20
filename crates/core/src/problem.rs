@@ -39,25 +39,6 @@ impl Hitman {
         }
     }
 
-    fn get_or_create_var(&mut self, id: u32) -> Result<Var, HitmanError> {
-        let var_entry = self.id2var.entry(id);
-        match var_entry {
-            Entry::Occupied(occupied) => Ok(*occupied.get()),
-            Entry::Vacant(vacant) => {
-                let size_ids = self.var2id.len();
-                let new_id = u32::try_from(size_ids)
-                    .map_err(|_| HitmanError::TooManyElements { value: size_ids })?;
-                if new_id > Var::MAX_IDX {
-                    return Err(HitmanError::TooManyElements { value: size_ids });
-                }
-                let var = Var::new(new_id);
-                self.var2id.push(id);
-                vacant.insert(var);
-                Ok(var)
-            }
-        }
-    }
-
     /// Add a new set to hit
     /// # Errors
     /// Returns [`HitmanError`]
@@ -151,6 +132,26 @@ impl Hitman {
             .map_err(|e| HitmanError::Solver(e.to_string()))?;
         Ok(())
     }
+
+    fn get_or_create_var(&mut self, id: u32) -> Result<Var, HitmanError> {
+        let var_entry = self.id2var.entry(id);
+        match var_entry {
+            Entry::Occupied(occupied) => Ok(*occupied.get()),
+            Entry::Vacant(vacant) => {
+                let size_ids = self.var2id.len();
+                let new_id = u32::try_from(size_ids)
+                    .map_err(|_| HitmanError::TooManyElements { value: size_ids })?;
+                if new_id > Var::MAX_IDX {
+                    return Err(HitmanError::TooManyElements { value: size_ids });
+                }
+                let var = Var::new(new_id);
+                self.var2id.push(id);
+                vacant.insert(var);
+                Ok(var)
+            }
+        }
+    }
+
 }
 
 fn new_minimal_solver() -> BasicSolver {
@@ -224,7 +225,9 @@ mod tests {
     fn new_is_empty() {
         let hitman = Hitman::new();
         assert_eq!(hitman.id2var.len(), 0);
+        assert!(!hitman.unsat);
     }
+
     #[test]
     fn hit_assigns_ids() {
         let mut hitman = Hitman::new();
