@@ -1,6 +1,6 @@
 use rustsat::clause;
-use rustsat::solvers::{PhaseLit, Solve, SolverResult};
-use rustsat::types::{Clause, Lit, TernaryVal, Var};
+use rustsat::solvers::Solve;
+use rustsat::types::{Clause, Lit, Var};
 use rustsat_batsat::BasicSolver;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -47,30 +47,31 @@ impl Hitman {
                 let size_ids = self.var2id.len();
                 let new_id = u32::try_from(size_ids)
                     .map_err(|_| HitmanError::TooManyElements { value: size_ids })?;
-                self.var2id.push(id);
+                if new_id > Var::MAX_IDX {
+                    return Err(HitmanError::TooManyElements { value: size_ids });
+                }
                 let var = Var::new(new_id);
-                vacant.insert(Var::new(new_id));
+                self.var2id.push(id);
+                vacant.insert(var);
                 Ok(var)
             }
         }
     }
 
-    // TODO when hitting an empty set the collection
-    // has no more hitting sets. I need to cover this
-    // TODO if I have an error halfway, the set is not
-    // included but the ids before the error keep their ids
-    /// Add the set `clause` as a new set to hit
+    /// Add a new set to hit
     /// # Errors
     /// Returns [`HitmanError`]
-    /// if more than ``u32::MAX`` distinct elements are added
+    /// if more than ``Var::MAX_IDX`` distinct elements are added
     pub fn hit(&mut self, set: &[u32]) -> Result<(), HitmanError> {
-        if set.is_empty() {
-            self.unsat = true;
-        }
         self.add_clause(set.iter().map(|id| (*id, true)))?;
         Ok(())
     }
 
+    /// Add the set that is not going to be report
+    /// as hitting set
+    /// # Errors
+    /// Returns [`HitmanError`]
+    /// if more than ``Var::MAX_IDX`` distinct elements are added
     pub fn block(&mut self, set: &[u32]) -> Result<(), HitmanError> {
         self.add_clause(set.iter().map(|id| (*id, false)))?;
         Ok(())
@@ -82,12 +83,17 @@ impl Hitman {
     ) -> Result<(), HitmanError> {
         let clause = lits
             .into_iter()
-            .map(|(id, sign)| {
+            .map(|(id, positive)| {
                 let var = self.get_or_create_var(id)?;
 
-                Ok(var.lit(!sign))
+                // The arg of lit is negated
+                Ok(var.lit(!positive))
             })
             .collect::<Result<Clause, HitmanError>>()?;
+
+        if clause.is_empty() {
+            self.unsat = true;
+        }
 
         self.oracle
             .add_clause(clause)
@@ -95,15 +101,12 @@ impl Hitman {
         Ok(())
     }
 
-    /// Add the set `claues` as a new set to hit
+    /// Add a new set to hit
     /// if it has duplicates, it filters them
     /// # Errors
     /// Returns [`HitmanError`] if the number of
     /// lits is greater than u32 type
     pub fn hit_filtering(&mut self, set: &[u32]) -> Result<(), HitmanError> {
-        if set.is_empty() {
-            self.unsat = true;
-        }
         self.add_clause_filtering(set.iter().map(|id| (*id, true)))?;
         Ok(())
     }
@@ -119,25 +122,30 @@ impl Hitman {
             let mut current_clause: Vec<Lit> = Vec::with_capacity(lower);
             let mut seen = HashSet::with_capacity(lower);
 
-            for (id, sign) in lits_iter {
-                if seen.insert((id, sign)) {
+            for (id, positive) in lits_iter {
+                if seen.insert((id, positive)) {
                     let var = self.get_or_create_var(id)?;
-                    current_clause.push(var.lit(sign));
+                    current_clause.push(var.lit(!positive));
                 }
             }
             current_clause
         } else {
             let mut current_clause: Vec<Lit> = Vec::with_capacity(lower);
 
-            for (id, sign) in lits_iter {
+            for (id, positive) in lits_iter {
                 let var = self.get_or_create_var(id)?;
-                let lit = var.lit(sign);
+                let lit = var.lit(!positive);
                 if !current_clause.contains(&lit) {
                     current_clause.push(lit);
                 }
             }
             current_clause
         };
+
+        if clause.is_empty() {
+            self.unsat = true;
+        }
+
         self.oracle
             .add_clause(Clause::from_iter(clause))
             .map_err(|e| HitmanError::Solver(e.to_string()))?;
@@ -223,77 +231,28 @@ mod tests {
         hitman.hit(&[28, 10]).unwrap();
         hitman.hit(&[28, 11]).unwrap();
         hitman.hit(&[29, 28, 30, 10]).unwrap();
-        assert_eq!(hitman.var2id.get(&28u32), Some(&1u32));
-        assert_eq!(hitman.var2id.get(&10u32), Some(&2u32));
-        assert_eq!(hitman.var2id.get(&11u32), Some(&3u32));
-        assert_eq!(hitman.var2id.get(&29u32), Some(&4u32));
-        assert_eq!(hitman.var2id.get(&30u32), Some(&5u32));
+        assert_eq!(hitman.var2id.first(), Some(&28u32));
+        assert_eq!(hitman.var2id.get(1), Some(&10u32));
+        assert_eq!(hitman.var2id.get(2), Some(&11u32));
+        assert_eq!(hitman.var2id.get(3), Some(&29u32));
+        assert_eq!(hitman.var2id.get(4), Some(&30u32));
         assert_eq!(hitman.id2var.len(), 5);
     }
-    #[test]
-    fn hit_assigns_creates_sets() {
-        let mut hitman = Hitman::new();
-        hitman.hit(&[28, 10]).unwrap();
-        hitman.hit(&[28, 11]).unwrap();
-        hitman.hit(&[29, 28, 30, 10]).unwrap();
-        assert_eq!(hitman.sets, vec![vec![1, 2], vec![1, 3], vec![4, 1, 5, 2]]);
-    }
+
     #[test]
     fn empty_clause() {
         let mut hitman = Hitman::new();
         hitman.hit(&[]).unwrap();
         assert_eq!(hitman.id2var.len(), 0);
-        assert_eq!(hitman.sets.len(), 1);
+        assert!(hitman.unsat);
     }
+
     #[test]
     fn id_round_trip() {
         let mut hitman = Hitman::new();
         hitman.hit(&[28, 10]).unwrap();
         hitman.hit(&[28, 11]).unwrap();
         hitman.hit(&[29, 28, 30, 10]).unwrap();
-        assert_eq!(hitman.id2var, &[28, 10, 11, 29, 30]);
-    }
-    #[test]
-    fn test_get_sets() {
-        let mut hitman = Hitman::new();
-        hitman.hit(&[5, 3, 10]).unwrap();
-        let first = hitman.sets()[0].clone();
-        hitman.hit(&[2, 3, 4]).unwrap();
-        assert_eq!(first, &[1, 2, 3]);
-    }
-    #[test]
-    fn hit_and_hit_w_filter() {
-        let mut hitman = Hitman::new();
-        hitman.hit(&[2, 2, 3]).unwrap();
-        assert_eq!(hitman.sets, vec![vec![1, 1, 2]]);
-        let mut hitman = Hitman::new();
-        hitman.hit_filtering(&[2, 2, 3]).unwrap();
-        assert_eq!(hitman.sets, vec![vec![1, 2]]);
-    }
-    #[test]
-    fn testing_phase_lit() {
-        let mut solver1 = BasicSolver::default();
-
-        let x = Lit::new(1, true);
-        let y = Lit::new(2, true);
-        solver1.add_clause(clause![!x, y]).unwrap();
-
-        let res = solver1.solve().unwrap();
-        assert_eq!(res, SolverResult::Sat);
-
-        assert_eq!(solver1.lit_val(x).unwrap(), TernaryVal::True);
-        assert_eq!(solver1.lit_val(y).unwrap(), TernaryVal::True);
-
-        let mut solver2 = BasicSolver::default();
-
-        let x = Lit::new(1, false);
-        let y = Lit::new(2, false);
-        solver2.add_clause(clause![!x, y]).unwrap();
-
-        let res = solver2.solve().unwrap();
-        assert_eq!(res, SolverResult::Sat);
-
-        assert_eq!(solver2.lit_val(x).unwrap(), TernaryVal::False);
-        assert_eq!(solver2.lit_val(y).unwrap(), TernaryVal::False);
+        assert_eq!(hitman.var2id, [28, 10, 11, 29, 30]);
     }
 }
