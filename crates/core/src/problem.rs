@@ -264,7 +264,7 @@ mod tests {
         }
 
         let mut a_sorted = a.to_vec();
-        let mut b_sorted = a.to_vec();
+        let mut b_sorted = b.to_vec();
 
         for vec in &mut a_sorted {
             vec.sort_unstable();
@@ -294,7 +294,7 @@ mod tests {
         assert_eq!(hitman.get().unwrap(), None);
     }
     #[test]
-    fn get_empty_hitting_set_2() {
+    fn get_empty_hitting_set_adding_set_after() {
         let mut hitman = Hitman::new();
         hitman.hit(&[]).unwrap();
         hitman.hit(&[1, 2]).unwrap();
@@ -302,11 +302,24 @@ mod tests {
     }
 
     #[test]
-    fn get_empty_hitting_set_3() {
+    fn get_empty_hitting_set_adding_set_before() {
         let mut hitman = Hitman::new();
         hitman.hit(&[1, 2]).unwrap();
         hitman.hit(&[]).unwrap();
         assert_eq!(hitman.get().unwrap(), None);
+    }
+
+    #[test]
+    fn get_empty_hitting_set_w_no_hits() {
+        let mut hitman = Hitman::new();
+        assert_eq!(hitman.get().unwrap(), Some(vec![]));
+    }
+
+    #[test]
+    fn get_unique_hitting_set() {
+        let mut hitman = Hitman::new();
+        hitman.hit(&[1]).unwrap();
+        assert_eq!(hitman.get().unwrap(), Some(vec![1]));
     }
 
     #[test]
@@ -318,19 +331,10 @@ mod tests {
         }
 
         let mut blocked_sets: Vec<Vec<u32>> = Vec::new();
-
-        loop {
-            let result = hitman.get();
-            if let Ok(set) = result {
-                match set {
-                    Some(vec) => {
-                        assert!(is_minimal_hitting_set(&vec, &target_sets, &blocked_sets));
-                        hitman.block(&vec).expect("Should not return an Error");
-                        blocked_sets.push(vec.clone());
-                    }
-                    None => break,
-                }
-            }
+        while let Some(hs) = hitman.get().unwrap() {
+            assert!(is_minimal_hitting_set(&hs, &target_sets, &blocked_sets));
+            hitman.block(&hs).expect("Should not return an Error");
+            blocked_sets.push(hs);
         }
 
         let expected_hitting_sets: Vec<Vec<u32>> = vec![vec![3,1], vec![3,2]];
