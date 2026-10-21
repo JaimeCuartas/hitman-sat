@@ -249,6 +249,25 @@ mod tests {
         required_elements.len() == candidate_set.len()
     }
 
+    #[test]
+    fn is_minimal_hitting_set_correct() {
+        let collection_sets = vec![vec![1, 2], vec![2, 3], vec![3]];
+        assert!(!is_minimal_hitting_set(&[1, 2, 3], &collection_sets, &[]));
+        assert!(!is_minimal_hitting_set(&[1, 2], &collection_sets, &[]));
+        assert!(is_minimal_hitting_set(&[1, 3], &collection_sets, &[]));
+        // It is not because it should be blocked
+        assert!(!is_minimal_hitting_set(
+            &[1, 3],
+            &collection_sets,
+            &[vec![3, 1]]
+        ));
+        assert!(is_minimal_hitting_set(
+            &[2, 3],
+            &collection_sets,
+            &[vec![3, 1]]
+        ));
+    }
+
     fn is_subset(sub: &[u32], set: &HashSet<u32>) -> bool {
         for elem in sub {
             if !set.contains(elem) {
@@ -258,9 +277,19 @@ mod tests {
         true
     }
 
+    #[test]
+    fn is_subset_correct() {
+        assert!(is_subset(&[1, 2, 3], &HashSet::from([3, 2, 1])));
+        assert!(is_subset(&[], &HashSet::from([3, 2, 1])));
+        assert!(!is_subset(&[4], &HashSet::from([3, 2, 1])));
+        assert!(is_subset(&[1], &HashSet::from([3, 2, 1])));
+        assert!(is_subset(&[3, 1], &HashSet::from([3, 2, 1])));
+        assert!(!is_subset(&[3, 1, 4], &HashSet::from([3, 2, 1])));
+    }
+
     fn is_same_collection_of_set(a: &[Vec<u32>], b: &[Vec<u32>]) -> bool {
         if a.len() != b.len() {
-            return false
+            return false;
         }
 
         let mut a_sorted = a.to_vec();
@@ -320,6 +349,8 @@ mod tests {
         let mut hitman = Hitman::new();
         hitman.hit(&[1]).unwrap();
         assert_eq!(hitman.get().unwrap(), Some(vec![1]));
+        hitman.block(&[1]).unwrap();
+        assert_eq!(hitman.get().unwrap(), None);
     }
 
     #[test]
@@ -332,14 +363,20 @@ mod tests {
 
         let mut blocked_sets: Vec<Vec<u32>> = Vec::new();
         while let Some(hs) = hitman.get().unwrap() {
-            assert!(is_minimal_hitting_set(&hs, &target_sets, &blocked_sets));
+            assert!(
+                is_minimal_hitting_set(&hs, &target_sets, &blocked_sets),
+                "{hs:?} is not minimal hitting set"
+            );
             hitman.block(&hs).expect("Should not return an Error");
             blocked_sets.push(hs);
         }
 
-        let expected_hitting_sets: Vec<Vec<u32>> = vec![vec![3,1], vec![3,2]];
+        let expected_hitting_sets: Vec<Vec<u32>> = vec![vec![3, 1], vec![3, 2]];
 
-        assert!(is_same_collection_of_set(&expected_hitting_sets, &blocked_sets));
+        assert!(
+            is_same_collection_of_set(&expected_hitting_sets, &blocked_sets),
+            "The expected collection of hitting sets was not met"
+        );
     }
 
     #[test]
