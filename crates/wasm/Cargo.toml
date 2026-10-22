@@ -1,11 +1,11 @@
 [package]
 name = "hitman-sat-wasm"
 description = "WebAssembly bindings for the hitting set"
-readme = "README.md"
 publish = false
 license = { workspace = true }
 version = { workspace = true }
 edition = { workspace = true }
+readme = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -17,3 +17,6 @@ serde-wasm-bindgen = "0.6.5"
 
 [lints]
 workspace = true
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]
