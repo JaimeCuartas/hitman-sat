@@ -1,3 +1,4 @@
+use batsat::SolverInterface;
 use rustsat::solvers::{Solve, SolverResult};
 use rustsat::types::{Clause, Lit, TernaryVal, Var};
 use rustsat_batsat::BasicSolver;
@@ -183,6 +184,7 @@ impl Hitman {
                     return Err(HitmanError::TooManyElements { value: size_ids });
                 }
                 let var = Var::new(new_id);
+                register_var_negative_polarity(&mut self.oracle, var);
                 self.var2id.push(id);
                 vacant.insert(var);
                 Ok(var)
@@ -195,10 +197,20 @@ fn new_minimal_solver() -> BasicSolver {
     let mut solver = BasicSolver::default();
     let opts = batsat::SolverOpts {
         phase_saving: 0,
+        rnd_pol: false,
         ..Default::default()
     };
     *solver.batsat_mut() = batsat::Solver::new(opts, batsat::BasicCallbacks::default());
     solver
+}
+
+fn register_var_negative_polarity(oracle: &mut BasicSolver, var: Var) {
+    let batsat_var = oracle.batsat_mut().new_var(batsat::lbool::FALSE, true);
+    debug_assert_eq!(
+        batsat_var.idx(),
+        var.idx32(),
+        "BatSat and rustsat var indices must match"
+    );
 }
 
 #[cfg(test)]
