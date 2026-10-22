@@ -1,7 +1,7 @@
 [package]
 name = "hitman-sat"
 description = "SAT-based hitting set solver"
-readme = "../../README.md"
+readme = "README.md"
 license = { workspace = true }
 version = { workspace = true }
 edition = { workspace = true }

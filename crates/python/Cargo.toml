@@ -1,6 +1,7 @@
 [package]
 name = "hitman-sat-python"
 publish = false
+redme = "README.md"
 license = { workspace = true }
 version = { workspace = true }
 edition = { workspace = true }

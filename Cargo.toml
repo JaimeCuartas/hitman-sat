@@ -11,6 +11,7 @@ license = "MIT"
 repository = "https://github.com/JaimeCuartas/hitman-sat"
 version = "0.1.2"
 edition = "2024"
+readme = "README.md"
 
 [workspace.dependencies]
 hitman = { package = "hitman-sat", path = "crates/core" }

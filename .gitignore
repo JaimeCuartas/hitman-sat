@@ -31,3 +31,4 @@ rustc-ice-*.txt
 
 #For Python virtual env
 .venv/
+crates/wasm/node_modules/
