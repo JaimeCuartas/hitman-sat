@@ -1,11 +1,12 @@
 [package]
 name = "hitman-sat-wasm"
 description = "WebAssembly bindings for the hitting set"
+readme = "README.md"
 publish = false
 license = { workspace = true }
 version = { workspace = true }
 edition = { workspace = true }
-readme = { workspace = true }
+repository = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

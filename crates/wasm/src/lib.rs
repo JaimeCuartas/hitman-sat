@@ -24,7 +24,7 @@ impl Hitman {
     /// Add a new set to hit
     /// # Errors
     /// Throws an Error
-    /// if more than 2^32 distinct elements are added
+    /// if more than 2^31-1 distinct elements are added
     pub fn hit(&mut self, set: &[u32]) -> Result<(), JsError> {
         self.inner.hit(set)?;
         Ok(())
@@ -34,7 +34,7 @@ impl Hitman {
     /// as hitting set
     /// # Errors
     /// Throws an Error
-    /// if more than ``Var::MAX_IDX`` distinct elements are added
+    /// if more than 2^31-1 distinct elements are added
     pub fn block(&mut self, set: &[u32]) -> Result<(), JsError> {
         self.inner.block(set)?;
         Ok(())
