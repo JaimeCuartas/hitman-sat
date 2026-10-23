@@ -40,7 +40,7 @@ impl Hitman {
         Ok(())
     }
 
-    /// Retreive a hitting set and undefined when
+    /// Retrieve a hitting set and undefined when
     /// no more hitting sets exist
     /// # Errors
     /// Throws an Error
