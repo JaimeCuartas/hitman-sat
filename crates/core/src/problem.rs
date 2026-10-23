@@ -58,7 +58,7 @@ impl Hitman {
         Ok(())
     }
 
-    /// Retreive a hitting set
+    /// Retrieve a hitting set
     /// # Errors
     /// Returns [`HitmanError`]
     /// if SAT solver is interrupted
