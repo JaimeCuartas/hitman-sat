@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use hitman::Hitman as CoreHitman;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct Hitman {
@@ -7,18 +7,19 @@ pub struct Hitman {
 }
 
 impl Default for Hitman {
-    fn default() -> Self{
+    fn default() -> Self {
         Self::new()
     }
 }
 
 #[wasm_bindgen]
 impl Hitman {
-
     #[wasm_bindgen(constructor)]
     #[must_use]
     pub fn new() -> Hitman {
-        Hitman {inner: CoreHitman::default() }
+        Hitman {
+            inner: CoreHitman::default(),
+        }
     }
 
     /// Add a new set to hit
@@ -30,8 +31,7 @@ impl Hitman {
         Ok(())
     }
 
-    /// Add the set that is not going to be report
-    /// as hitting set
+    /// Prevents this hitting set, and any superset of it
     /// # Errors
     /// Throws an Error
     /// if more than 2^31-1 distinct elements are added
@@ -48,6 +48,4 @@ impl Hitman {
     pub fn get(&mut self) -> Result<Option<Vec<u32>>, JsError> {
         Ok(self.inner.get()?)
     }
-
 }
-

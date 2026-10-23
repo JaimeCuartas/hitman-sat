@@ -1,12 +1,14 @@
-#Compute minimal hitting sets
+# Compute minimal hitting sets
 
-It is meant for bundlers such as Vite or webpack
+It is meant for bundlers such as Vite or webpack.
+Node.js is not supported.
 
-#Installation
+# Installation
 `npm install hitman-sat`
 
-#Ussage
+# Usage
 
+```ts
 import { Hitman } from "hitman-sat";
 
 function enumerateHittingSets(sets: number[][]): number[][] {
@@ -25,6 +27,11 @@ function enumerateHittingSets(sets: number[][]): number[][] {
 }
 
 enumerateHittingSets([[1, 2], [2, 3], [3]])
+...
+```
 
 #Expected output:
+```
 [[1, 3], [2, 3]]
+...
+```
